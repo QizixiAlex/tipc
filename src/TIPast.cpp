@@ -194,8 +194,12 @@ void Function::genId() {
     if (this->id) {
         return;
     }
-    this->id = ast_counter++;
-    fun2id[NAME] = this->id;
+    if (fun2id.find(NAME) != fun2id.end()) {
+        this->id = fun2id[NAME];
+    } else {
+        this->id = ast_counter++;
+        fun2id[NAME] = this->id;
+    }
     //clear variable definitions
     var2id.clear();
     for (std::string param : FORMALS) {
@@ -215,6 +219,9 @@ void Program::genId() {
         return;
     }
     this->id = ast_counter++;
+    for (auto const& fun : FUNCTIONS) {
+        fun2id[fun->getName()] = ast_counter++;
+    }
     for (auto const& fun : FUNCTIONS) {
         fun->genId();
     }
