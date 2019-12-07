@@ -20,13 +20,21 @@ class UnionFindSolver;
 
 namespace TIPtree {
 
+// AstNode - node identifying and typechecking interface
+class AstNode {
+public:
+  int id = 0;
+  virtual void genId() = 0;
+  int getId();
+  virtual void typecheck(UnionFindSolver* solver) = 0;
+};
+
 // Node - this is a base class for all tree nodes
-class Node {
+class Node : public AstNode{
 public:
   virtual ~Node() = default;
   virtual llvm::Value *codegen() = 0;
   virtual std::string print() = 0;
-  virtual void typecheck(UnionFindSolver* solver) = 0;
 };
 
 /******************* Expression AST Nodes *********************/
@@ -46,6 +54,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// VariableExpr - class for referencing a variable
@@ -58,6 +67,7 @@ public:
   void typecheck(UnionFindSolver* solver) override;
   // Getter to distinguish LHS of assigment for codegen
   std::string getName() { return NAME; };
+  void genId() override;
 };
 
 /// BinaryExpr - class for a binary operator.
@@ -71,6 +81,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// FunAppExpr - class for function calls.
@@ -84,6 +95,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// InputExpr - class for input expression
@@ -94,6 +106,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // AllocExpr - class for alloc expression
@@ -104,16 +117,20 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // RefExpr - class for referencing the address of a variable
 class RefExpr : public Expr {
   std::string NAME;
 public:  
+  int refId;
   RefExpr(const std::string &NAME) : NAME(NAME) {}
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
+  int getRefId();
 };
 
 // DeRefExpr - class for dereferencing a pointer expression
@@ -124,6 +141,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// NullExpr - class for a null expression
@@ -134,6 +152,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // FieldExpr - class for the field of a structure
@@ -146,6 +165,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // RecordExpr - class for defining a record
@@ -157,6 +177,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // AccessExpr - class for a record field access
@@ -169,6 +190,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /******************* Statement AST Nodes *********************/
@@ -183,6 +205,7 @@ public:
 // DeclStmt - class for declaration
 class DeclStmt : public Stmt {
   std::vector<std::string> VARS;
+  std::vector<int> VAR_IDS;
   int LINE; // line on which decl statement occurs
 public:
   DeclStmt(std::vector<std::string> VARS, int LINE)
@@ -191,6 +214,7 @@ public:
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
   std::string printTyped(UnionFindSolver* solver);
+  void genId() override;
 };
 
 // BlockStmt - class for block of statements
@@ -202,6 +226,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // AssignStmt - class for assignment
@@ -213,6 +238,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 // WhileStmt - class for a while loop
@@ -225,6 +251,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// IfStmt - class for if-then-else
@@ -238,6 +265,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// OutputStmt - class for a output statement
@@ -248,6 +276,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// ErrorStmt - class for a error statement
@@ -258,6 +287,7 @@ public:
   llvm::Value *codegen() override;
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
+  void genId() override;
 };
 
 /// ReturnStmt - class for a return statement
@@ -269,14 +299,19 @@ public:
   std::string print() override;
   void typecheck(UnionFindSolver* solver) override;
   std::string printArg();
+  void genId() override;
+  int getArgId() {
+    return ARG->getId();
+  }
 };
 
 /******************* Program and Function Nodes *********************/
 
 // Function - signature, local declarations, and a body
-class Function {
+class Function : public AstNode{
   std::string NAME;
   std::vector<std::string> FORMALS;
+  std::vector<int> FORMAL_IDS;
   std::vector<std::unique_ptr<DeclStmt>> DECLS;
   std::vector<std::unique_ptr<Stmt>> BODY;
   int LINE; // line on which function definition occurs
@@ -290,6 +325,7 @@ public:
   std::string print();
   void typecheck(UnionFindSolver* solver);
   std::string printTyped(UnionFindSolver* solver);
+  void genId() override;
   /*
    * These getters are needed because we perform two passes over
    * functions during code generation:
@@ -302,7 +338,7 @@ public:
 };
 
 // Program - just a list of functions
-class Program {
+class Program : public AstNode{
   std::vector<std::unique_ptr<Function>> FUNCTIONS;
 public:
   Program(std::vector<std::unique_ptr<Function>> FUNCTIONS)
@@ -310,6 +346,8 @@ public:
   std::unique_ptr<llvm::Module> codegen(std::string programName);
   std::string print(std::string i, bool pl);
   std::string printTyped();
+  void genId() override;
+  void typecheck(UnionFindSolver* solver) override;
 };
 
 } // namespace TIPtree
