@@ -219,8 +219,15 @@ void Program::genId() {
         return;
     }
     this->id = ast_counter++;
+    bool has_main = false;
     for (auto const& fun : FUNCTIONS) {
         fun2id[fun->getName()] = ast_counter++;
+        if (fun->getName() == "main") {
+            has_main = true;
+        }
+    }
+    if (!has_main) {
+        throw TIPTypeError("No main function defined");
     }
     for (auto const& fun : FUNCTIONS) {
         fun->genId();
