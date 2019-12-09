@@ -7,15 +7,15 @@ fi
 bname=`basename $1 .tip`
 
 # create a per user tmp directory for storing diff files
-if [ ! -d /tmp/$USER ]; then
-  mkdir /tmp/$USER
+if [ ! -d ~/tmp ]; then
+  mkdir ~/tmp
 fi
 
 # compile and run the test through tipc 
 #    we suppress warnings while linking because of a target triple mismatch
 ../build/tipc $1
 clang-7 -w -static $1.bc ../intrinsics/tip_intrinsics.bc -o $bname
-./$bname >/tmp/$USER/$bname.tipc-out
+./$bname >~/tmp/$bname.tipc-out
 
 # create a tipc directory for storing source to run TIP Scala
 if [ ! -d ~/TIP/tipc ]; then
@@ -27,7 +27,7 @@ fi
 #   reenable stty echo when finished
 cp $1 ~/TIP/tipc/
 cd ~/TIP
-./tip -run tipc/$1 >/tmp/$USER/$bname.tipscala-out
+./tip -run tipc/$1 >~/tmp/$bname.tipscala-out
 stty echo
 cd - >/dev/null
 
@@ -35,9 +35,9 @@ cd - >/dev/null
 # and errors. If the diff contains none, then the test passes
 # We have to transform the scala output to remove specific unprintable
 # chars prior to diffing.
-sed 's/\[\(0\|1\|31\)m//g' /tmp/$USER/$bname.tipscala-out >/tmp/$USER/t
-cp /tmp/$USER/t /tmp/$USER/$bname.tipscala-out
-if diff /tmp/$USER/$bname.tipc-out /tmp/$USER/$bname.tipscala-out | grep -q -e "Program output" -e " Error: Execution error"; then
+sed 's/\[\(0\|1\|31\)m//g' ~/tmp/$bname.tipscala-out >~/tmp/t
+cp ~/tmp/t ~/tmp/$bname.tipscala-out
+if diff ~/tmp/$bname.tipc-out ~/tmp/$bname.tipscala-out | grep -q -e "Program output" -e " Error: Execution error"; then
   echo "$bname failed"
 else
   echo "$bname passed"
